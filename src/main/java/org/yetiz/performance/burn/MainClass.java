@@ -4,7 +4,6 @@ import org.apache.log4j.Logger;
 
 import java.io.IOException;
 import java.text.DecimalFormat;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Iterator;
@@ -17,7 +16,7 @@ public class MainClass {
 
 	private static Logger logger = Logger.getLogger(MainClass.class);
 
-	public static void main(String[] args) throws ParseException, IOException, InterruptedException {
+	public static void main(String[] args) throws IOException, InterruptedException {
 		if (args.length != 4) {
 			System.out.println("java -jar target/BurnHTTP.jar <Url File Path> <sync/async> <Thread Count> <# of " +
 				"Request Per Second of Each Thread>");
