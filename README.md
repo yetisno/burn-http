@@ -17,8 +17,6 @@ Each client will launch request from first url to last url in url list and loop 
 # Url File Format
 each line contain a target url, ex:
 
-    ----File Start------
     http://google.com
     https://google.com
     http://yahoo.com
-    ---------EOF--------
