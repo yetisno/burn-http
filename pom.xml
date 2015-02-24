@@ -6,7 +6,7 @@
 
 	<groupId>org.yetiz.performance.burn</groupId>
 	<artifactId>burn-http</artifactId>
-	<version>1.0</version>
+	<version>1.1</version>
 	<dependencies>
 		<dependency>
 			<groupId>com.ning</groupId>
@@ -18,6 +18,11 @@
 			<artifactId>log4j</artifactId>
 			<version>1.2.17</version>
 		</dependency>
+		<dependency>
+			<groupId>com.google.code.gson</groupId>
+			<artifactId>gson</artifactId>
+			<version>2.3.1</version>
+		</dependency>
 	</dependencies>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -27,40 +32,6 @@
 	<build>
 		<finalName>BurnHTTP</finalName>
 		<plugins>
-			<!--
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-jar-plugin</artifactId>
-				<version>2.4</version>
-				<configuration>
-					<finalName>${project.name}</finalName>
-					<archive>
-						<manifest>
-							<mainClass>${project.groupId}.burnStockMP.MainClass</mainClass>
-							<addClasspath>true</addClasspath>
-							<classpathPrefix>${project.basedir}/lib/</classpathPrefix>
-						</manifest>
-					</archive>
-				</configuration>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-dependency-plugin</artifactId>
-				<version>2.8</version>
-				<executions>
-					<execution>
-						<id>copy-dependencies</id>
-						<phase>package</phase>
-						<goals>
-							<goal>copy-dependencies</goal>
-						</goals>
-						<configuration>
-							<outputDirectory>${project.basedir}/lib/</outputDirectory>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-			-->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-assembly-plugin</artifactId>

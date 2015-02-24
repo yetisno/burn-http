@@ -17,6 +17,27 @@ Each client will launch request from first url to last url in url list and loop 
 # Url File Format
 each line contain a target url, ex:
 
-    http://google.com
-    https://google.com
-    http://yahoo.com
+```json
+{
+  "reqs": [
+    {
+      "url": "http://google.com",
+      "method":"POST",
+      "body": "sss",
+      "headers": {
+        "type": "newg",
+        "count": "2"
+      }
+    },
+    {
+      "url": "http://yahoo.com",
+      "method":"GET",
+      "body": "",
+      "headers": {
+        "type": "newy",
+        "count": "2"
+      }
+    }
+  ]
+}
+```

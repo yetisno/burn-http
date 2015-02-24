@@ -3,9 +3,11 @@ package org.yetiz.performance.burn;
 import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.AsyncHttpClientConfig;
 import com.ning.http.client.Request;
+import com.ning.http.client.RequestBuilder;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -17,7 +19,7 @@ public class ASyncBurnThread extends BurnThread {
 	private static AsyncHttpClient asyncHttpClient;
 	protected int requestPerSecond;
 	protected CountDownLatch preparedSignal;
-	protected ArrayList<String> urlList;
+	protected ArrayList<Req> reqList;
 	protected ArrayList<Request> requestArrayList;
 
 	static {
@@ -37,8 +39,8 @@ public class ASyncBurnThread extends BurnThread {
 	 * name. Automatically generated names are of the form
 	 * {@code "Thread-"+}<i>n</i>, where <i>n</i> is an integer.
 	 */
-	public ASyncBurnThread(String urlFilePath, Integer requestPerSecond, CountDownLatch preparedSignal) {
-		this.urlList = UrlList.getUrlList(urlFilePath);
+	public ASyncBurnThread(String reqFilePath, Integer requestPerSecond, CountDownLatch preparedSignal) {
+		this.reqList = ReqList.getReqList(reqFilePath);
 		this.requestPerSecond = requestPerSecond;
 		this.preparedSignal = preparedSignal;
 		requestArrayList = new ArrayList<Request>();
@@ -62,12 +64,19 @@ public class ASyncBurnThread extends BurnThread {
 	 */
 	@Override
 	public void run() {
-		if (urlList == null) {
+		if (reqList == null) {
 			System.out.println("no file!");
 			System.exit(0);
 		}
-		for (Iterator<String> iterator = urlList.iterator(); iterator.hasNext(); ) {
-			requestArrayList.add(asyncHttpClient.prepareGet(iterator.next()).build());
+		for (Iterator<Req> iterator = reqList.iterator(); iterator.hasNext(); ) {
+			Req req = iterator.next();
+			RequestBuilder requestBuilder = new RequestBuilder(req.getMethod())
+				.setUrl(req.getUrl())
+				.setBody(req.getBody());
+			for (Map.Entry<String, String> entry : req.getHeaders().entrySet()) {
+				requestBuilder.setHeader(entry.getKey(), entry.getValue());
+			}
+			requestArrayList.add(asyncHttpClient.prepareRequest(requestBuilder.build()).build());
 		}
 		try {
 			preparedSignal.countDown();

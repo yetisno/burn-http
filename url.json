@@ -1,0 +1,22 @@
+{
+  "reqs": [
+    {
+      "url": "http://google.com",
+      "method":"POST",
+      "body": "sss",
+      "headers": {
+        "type": "newg",
+        "count": "2"
+      }
+    },
+    {
+      "url": "http://yahoo.com",
+      "method":"GET",
+      "body": "",
+      "headers": {
+        "type": "newy",
+        "count": "2"
+      }
+    }
+  ]
+}
