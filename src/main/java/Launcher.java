@@ -15,15 +15,22 @@ public class Launcher {
 
 	public static void main(String[] args) throws IOException, InterruptedException {
 		System.setProperty(YamlConfigurationFactory.CONFIGURATION_FILE_PROPERTY, "log.yaml");
-		if (args.length != 4) {
-			System.out.println("java -jar target/BurnHTTP.jar <Url File Path> <Thread Count> <Loop Count> <# of " +
+		if (args.length != 5) {
+			System.out.println("java -jar target/BurnHTTP.jar <Url File Path> <sync/async> <Thread Count> <Loop Count> <# of " +
 				"Request Per Second of Each Thread>");
 			System.exit(0);
 		}
 		final ArrayList<Req> list = ReqList.getReqList(args[0]);
-		int threadCount = Integer.valueOf(args[1]);
-		final int loopTimes = Integer.valueOf(args[2]);
-		final int tps = Integer.valueOf(args[3]);
+		final Class sender = args[1].toUpperCase().equals("SYNC") ? SyncSender.class : AsyncSender.class;
+		int threadCount = Integer.valueOf(args[2]);
+		final int loopTimes = Integer.valueOf(args[3]);
+		final int tps = Integer.valueOf(args[4]);
+		Log.i(String.format("URL File: %s\n" +
+				"Mode: %s\n" +
+				"Threads: %d\n" +
+				"Loop Times: %d\n" +
+				"Tick Per Second: %d\n",
+			args[0], args[1].toUpperCase(), threadCount, loopTimes, tps));
 		EventLoopGroupSet loopGroupSet = new EventLoopGroupSet(0, threadCount);
 		final Bootstrap bootstrap = new Bootstrap()
 			.group(loopGroupSet.getWorkerGroup())
@@ -38,7 +45,11 @@ public class Launcher {
 			new Thread(new Runnable() {
 				@Override
 				public void run() {
-					SyncSender syncSender = new SyncSender(bootstrap);
+					Sender syncSender = null;
+					try {
+						syncSender = (Sender) sender.getConstructor(Bootstrap.class).newInstance(bootstrap);
+					} catch (Exception e) {
+					}
 					syncSender.start(list, loopTimes);
 				}
 			}).start();

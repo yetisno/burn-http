@@ -41,10 +41,6 @@ buildscript {
     repositories {
         mavenCentral()
     }
-
-    dependencies {
-        classpath 'net.sf.proguard:proguard-gradle:5.2.1'
-    }
 }
 
 def manifestMainClass = 'Launcher'
@@ -63,18 +59,7 @@ task addLogConfigure(type: Copy) {
     from "$projectDir${File.separator}url.json"
 }
 
-jar {
-    dependsOn addLogConfigure
-    dependsOn exportLib
-}
-
-task sourcesJar(type: Jar, dependsOn: classes) {
-    classifier = 'sources'
-    from sourceSets.main.allSource
-}
-
 task manifastJar(type: Jar, dependsOn: jar) {
-    classifier = 'standalone'
     from files(sourceSets.main.output.classesDir)
     from files(sourceSets.main.output.resourcesDir)
     manifest {
@@ -85,48 +70,24 @@ task manifastJar(type: Jar, dependsOn: jar) {
     }
 }
 
-task shrinkJar(type: proguard.gradle.ProGuardTask, dependsOn: manifastJar) {
-    ext {
-        javaBase = System.properties["java.home"]
-
-        javaRt = new StringBuilder(File.separator)
-                .append("lib")
-                .append(File.separator)
-                .append("rt.jar")
-                .toString()
-        if (System.properties["os.name"].toLowerCase().contains("mac")) {
-            if (!new File(javaBase + javaRt).exists()) {
-                javaRt = new StringBuilder(File.separator)
-                        .append("..")
-                        .append(File.separator)
-                        .append("Classes")
-                        .append(File.separator)
-                        .append("classes.jar")
-                        .toString()
-            }
-        }
-    }
-    libraryjars javaBase + javaRt
-    libraryjars configurations.compile
-
-    ext {
-        jar.classifier = "standalone"
-        injar = jar.archivePath
-        outDir = file("$buildDir${File.separator}output")
-        outjar = "${outDir}${File.separator}${jar.baseName}.jar"
-    }
-    outDir.mkdirs()
-
-    injars injar
-    outjars outjar
-    configuration 'proguard.pro'
+task copyJ(type: Copy, dependsOn: manifastJar) {
+    from "$buildDir${File.separator}libs${File.separator}${project.name}-${version}.jar"
+    into "$buildDir${File.separator}output${File.separator}"
 }
 
-task shrinkOutput(type: Jar, dependsOn: shrinkJar) {
-    classifier = 'shrink'
-    from zipTree(shrinkJar.outjar)
+task copyJar(type: Jar, dependsOn: copyJ) {
+}
+
+jar {
+    dependsOn addLogConfigure
+    dependsOn exportLib
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
 }
 
 artifacts {
-    archives shrinkOutput
+    archives copyJar
 }

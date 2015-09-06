@@ -12,20 +12,20 @@ import java.util.concurrent.TimeUnit;
 /**
  * Created by yeti on 15/9/6.
  */
-public class SyncSender implements Sender {
+public class AsyncSender implements Sender {
 	protected volatile Counter counter = Counter.instance();
 	protected Bootstrap bootstrap;
 	protected volatile Channel channel;
 	private int timeout = 3000;
 
-	public SyncSender(Bootstrap bootstrap) {
+	public AsyncSender(Bootstrap bootstrap) {
 		this.bootstrap = bootstrap;
 	}
 
 	private void send(Req req) {
 		try {
 			URI uri = new URI(req.getUrl());
-			channel = bootstrap.connect(uri.getHost(), uri.getPort() == -1 ? 80 : uri.getPort()).sync().channel();
+			channel = bootstrap.connect(uri.getHost(), uri.getPort() == -1 ? 80 : uri.getPort()).syncUninterruptibly().channel();
 			FullHttpRequest request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.valueOf(req.getMethod().toUpperCase()), uri.toASCIIString());
 			HttpHeaders headers = request.headers();
 			headers.set("Host", uri.getHost());
@@ -35,20 +35,10 @@ public class SyncSender implements Sender {
 			if (request.getMethod().equals(HttpMethod.POST)) {
 				request.content().writeBytes(req.getBody().getBytes());
 			}
-			channel.writeAndFlush(request).sync();
+			channel.writeAndFlush(request);
 		} catch (Exception e) {
 			e.printStackTrace();
 			counter.fail().getAndIncrement();
-			return;
-		}
-
-		try {
-			SyncResultHandler handler = ((SyncResultHandler) channel.pipeline().get("SH"));
-			handler.semaphore.tryAcquire(timeout, TimeUnit.MILLISECONDS);
-			handler.semaphore.release();
-			channel.close();
-		} catch (InterruptedException e) {
-			e.printStackTrace();
 			return;
 		}
 	}
