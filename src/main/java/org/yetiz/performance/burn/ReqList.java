@@ -4,9 +4,7 @@ import com.google.gson.Gson;
 import org.apache.log4j.Logger;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,10 +32,7 @@ public class ReqList {
 		}
 		try {
 			return ((ArrayList<Req>) new Gson().fromJson(new FileReader(reqFilePath), ReqList.class).reqs);
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
+		} catch (Exception e) {
 		}
 		return urlList;
 	}

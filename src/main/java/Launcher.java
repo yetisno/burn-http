@@ -1,6 +1,7 @@
-package org.yetiz.performance.burn;
-
 import org.apache.log4j.Logger;
+import org.yetiz.performance.burn.ASyncBurnThread;
+import org.yetiz.performance.burn.BurnThreadCountable;
+import org.yetiz.performance.burn.SyncBurnThread;
 
 import java.io.IOException;
 import java.text.DecimalFormat;
@@ -10,11 +11,10 @@ import java.util.Iterator;
 import java.util.concurrent.CountDownLatch;
 
 /**
- * Created by yeti on 15/1/5.
+ * Created by yeti on 2015/8/13.
  */
-public class MainClass {
-
-	private static Logger logger = Logger.getLogger(MainClass.class);
+public class Launcher {
+	private static Logger logger = Logger.getLogger(Launcher.class);
 
 	public static void main(String[] args) throws IOException, InterruptedException {
 		if (args.length != 4) {
