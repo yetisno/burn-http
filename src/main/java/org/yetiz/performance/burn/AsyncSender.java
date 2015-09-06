@@ -26,9 +26,9 @@ public class AsyncSender implements Sender {
 		try {
 			URI uri = new URI(req.getUrl());
 			channel = bootstrap.connect(uri.getHost(), uri.getPort() == -1 ? 80 : uri.getPort()).syncUninterruptibly().channel();
-			FullHttpRequest request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.valueOf(req.getMethod().toUpperCase()), uri.toASCIIString());
+			FullHttpRequest request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.valueOf(req.getMethod().toUpperCase()), uri.getPath());
 			HttpHeaders headers = request.headers();
-			headers.set("Host", uri.getHost());
+			headers.set("Host", String.format("%s:%d", uri.getHost(), uri.getPort()));
 			for (Map.Entry<String, String> entry : req.getHeaders().entrySet()) {
 				headers.set(entry.getKey(), entry.getValue());
 			}
@@ -37,7 +37,6 @@ public class AsyncSender implements Sender {
 			}
 			channel.writeAndFlush(request);
 		} catch (Exception e) {
-			e.printStackTrace();
 			counter.fail().getAndIncrement();
 			return;
 		}

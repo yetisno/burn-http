@@ -1,4 +1,5 @@
 import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import org.apache.logging.log4j.core.config.yaml.YamlConfigurationFactory;
 import org.yetiz.Log;
@@ -13,15 +14,16 @@ import java.util.concurrent.Semaphore;
  */
 public class Launcher {
 
-	public static void main(String[] args) throws IOException, InterruptedException {
+	public static void main(String[] args) throws IOException, InterruptedException, IllegalAccessException, InstantiationException {
 		System.setProperty(YamlConfigurationFactory.CONFIGURATION_FILE_PROPERTY, "log.yaml");
 		if (args.length != 5) {
 			System.out.println("java -jar target/BurnHTTP.jar <Url File Path> <sync/async> <Thread Count> <Loop Count> <# of " +
-				"Request Per Second of Each Thread>");
+				"Request Per Second");
 			System.exit(0);
 		}
 		final ArrayList<Req> list = ReqList.getReqList(args[0]);
 		final Class sender = args[1].toUpperCase().equals("SYNC") ? SyncSender.class : AsyncSender.class;
+		final Class initializer = args[1].toUpperCase().equals("SYNC") ? SyncInitializer.class : AsyncInitializer.class;
 		int threadCount = Integer.valueOf(args[2]);
 		final int loopTimes = Integer.valueOf(args[3]);
 		final int tps = Integer.valueOf(args[4]);
@@ -35,8 +37,9 @@ public class Launcher {
 		final Bootstrap bootstrap = new Bootstrap()
 			.group(loopGroupSet.getWorkerGroup())
 			.channel(loopGroupSet.getSocketClass())
-			.handler(new SyncInitializer())
+			.handler(((ChannelInitializer) initializer.newInstance()))
 			.option(ChannelOption.SO_RCVBUF, 130172)
+			.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 3000)
 			.option(ChannelOption.SO_KEEPALIVE, true);
 		Counter counter = Counter.instance();
 		counter.semaphore(new Semaphore(0));
@@ -76,7 +79,7 @@ public class Launcher {
 				sps == 0 || sizeSum == 0 ? 0 : (sizeSum / sps),
 				sizeSum
 			));
-			if (threadCount * loopTimes * list.size() == success + fail) {
+			if (threadCount * loopTimes * list.size() <= success + fail) {
 				break;
 			}
 			Thread.sleep(1000);

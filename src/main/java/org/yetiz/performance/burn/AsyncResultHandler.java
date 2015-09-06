@@ -49,7 +49,6 @@ public class AsyncResultHandler extends ChannelDuplexHandler {
 	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
 		counter.fail.getAndIncrement();
-		cause.printStackTrace();
 	}
 
 	@Override

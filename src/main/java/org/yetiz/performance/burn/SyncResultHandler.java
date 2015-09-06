@@ -58,7 +58,6 @@ public class SyncResultHandler extends ChannelDuplexHandler {
 	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
 		counter.fail.getAndIncrement();
 		semaphore.release();
-		cause.printStackTrace();
 	}
 
 	@Override

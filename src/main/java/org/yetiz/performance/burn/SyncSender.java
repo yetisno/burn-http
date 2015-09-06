@@ -26,7 +26,7 @@ public class SyncSender implements Sender {
 		try {
 			URI uri = new URI(req.getUrl());
 			channel = bootstrap.connect(uri.getHost(), uri.getPort() == -1 ? 80 : uri.getPort()).sync().channel();
-			FullHttpRequest request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.valueOf(req.getMethod().toUpperCase()), uri.toASCIIString());
+			FullHttpRequest request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.valueOf(req.getMethod().toUpperCase()), uri.getPath());
 			HttpHeaders headers = request.headers();
 			headers.set("Host", uri.getHost());
 			for (Map.Entry<String, String> entry : req.getHeaders().entrySet()) {
@@ -37,7 +37,6 @@ public class SyncSender implements Sender {
 			}
 			channel.writeAndFlush(request).sync();
 		} catch (Exception e) {
-			e.printStackTrace();
 			counter.fail().getAndIncrement();
 			return;
 		}
@@ -48,7 +47,6 @@ public class SyncSender implements Sender {
 			handler.semaphore.release();
 			channel.close();
 		} catch (InterruptedException e) {
-			e.printStackTrace();
 			return;
 		}
 	}
