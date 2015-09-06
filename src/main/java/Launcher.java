@@ -1,87 +1,75 @@
-import org.apache.log4j.Logger;
-import org.yetiz.performance.burn.ASyncBurnThread;
-import org.yetiz.performance.burn.BurnThreadCountable;
-import org.yetiz.performance.burn.SyncBurnThread;
+import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.ChannelOption;
+import org.apache.logging.log4j.core.config.yaml.YamlConfigurationFactory;
+import org.yetiz.Log;
+import org.yetiz.performance.burn.*;
 
 import java.io.IOException;
-import java.text.DecimalFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Iterator;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
 
 /**
  * Created by yeti on 2015/8/13.
  */
 public class Launcher {
-	private static Logger logger = Logger.getLogger(Launcher.class);
 
 	public static void main(String[] args) throws IOException, InterruptedException {
+		System.setProperty(YamlConfigurationFactory.CONFIGURATION_FILE_PROPERTY, "log.yaml");
 		if (args.length != 4) {
-			System.out.println("java -jar target/BurnHTTP.jar <Url File Path> <sync/async> <Thread Count> <# of " +
+			System.out.println("java -jar target/BurnHTTP.jar <Url File Path> <Thread Count> <Loop Count> <# of " +
 				"Request Per Second of Each Thread>");
 			System.exit(0);
 		}
-		String urlFilePath = args[0];
-		boolean isSync = args[1].toUpperCase().equals("SYNC");
-		int threadCount = Integer.parseInt(args[2]);
-		int requestPerSecond = Integer.parseInt(args[3]);
-		ArrayList<BurnThreadCountable> burnThreads = new ArrayList<BurnThreadCountable>();
-		System.out.println("Sync Mode:      " + (isSync ? "True" : "False"));
-		System.out.println("File Path:      " + urlFilePath);
-		System.out.println("Thread Count:   " + threadCount);
-		System.out.println("#RPSET:         " + requestPerSecond);
-		System.out.println("Conn. timeout:  " + 5000);
-		System.out.println("Retry:          " + 0);
-		CountDownLatch preparedSignal = new CountDownLatch(threadCount);
-		System.out.println("Prepare Threads...");
-		logger.info("urlFilePath: " + urlFilePath);
-		logger.info("Sync: " + isSync);
-		logger.info("threadCount: " + threadCount);
-		logger.info("requestPerSecond: " + requestPerSecond);
-		for (int i = 0; i < threadCount; i++) {
-			logger.info("Start Thread " + i);
-			Thread burnThread =
-				isSync ?
-					new SyncBurnThread(urlFilePath, requestPerSecond, preparedSignal) :
-					new ASyncBurnThread(urlFilePath, requestPerSecond, preparedSignal);
-			burnThreads.add(((BurnThreadCountable) burnThread));
-			burnThread.start();
-		}
-		preparedSignal.await();
-		System.out.println("All Prepared!\nStart!");
+		final ArrayList<Req> list = ReqList.getReqList(args[0]);
+		int threadCount = Integer.valueOf(args[1]);
+		final int loopTimes = Integer.valueOf(args[2]);
+		final int tps = Integer.valueOf(args[3]);
+		EventLoopGroupSet loopGroupSet = new EventLoopGroupSet(0, threadCount);
+		final Bootstrap bootstrap = new Bootstrap()
+			.group(loopGroupSet.getWorkerGroup())
+			.channel(loopGroupSet.getSocketClass())
+			.handler(new SyncInitializer())
+			.option(ChannelOption.SO_RCVBUF, 130172)
+			.option(ChannelOption.SO_KEEPALIVE, true);
+		Counter counter = Counter.instance();
+		counter.semaphore(new Semaphore(0));
 
-		long currentCount = 0, currentDeltaTimeSum = 0, dropCount = 0;
-		long lastTime = System.currentTimeMillis();
-		StringBuilder stringBuilder = new StringBuilder();
-		while (true) {
-			stringBuilder.setLength(0);
-			long deltaTime = System.currentTimeMillis() - lastTime;
-			if (deltaTime < 1000) {
-				try {
-					Thread.sleep(1000 - deltaTime);
-				} catch (Exception e) {
+		for (int i = 0; i < threadCount; i++) {
+			new Thread(new Runnable() {
+				@Override
+				public void run() {
+					SyncSender syncSender = new SyncSender(bootstrap);
+					syncSender.start(list, loopTimes);
 				}
-			}
-			for (Iterator<BurnThreadCountable> iterator = burnThreads.iterator(); iterator.hasNext(); ) {
-				BurnThreadCountable burnThread = iterator.next();
-				currentCount += burnThread.getRoundCountAndReset();
-				currentDeltaTimeSum += burnThread.getRoundDeltaTimeSumAndReset();
-				dropCount += burnThread.getRoundDropCountAndReset();
-			}
-			stringBuilder.append(Calendar.getInstance().getTime().toString());
-			stringBuilder.append(" [tps: " + currentCount + "] ");
-			if (currentCount != 0)
-				stringBuilder.append("[AVG: " + new DecimalFormat("#0.00").format((new Double(currentDeltaTimeSum)
-					/ new Double(currentCount))) + " ms.] ");
-			stringBuilder.append("[Drp: " + dropCount + "]");
-			System.out.println(stringBuilder.toString());
-			logger.info(stringBuilder.toString()
-			);
-			lastTime = System.currentTimeMillis();
-			currentCount = 0;
-			currentDeltaTimeSum = 0;
-			dropCount = 0;
+			}).start();
 		}
+
+		long currentSuccess = 0;
+		while (true) {
+			long send = counter.send().get();
+			long success = counter.success().get();
+			long fail = counter.fail().get();
+			long timeSum = counter.receiveTimeSum().getAndSet(0);
+			long sizeSum = counter.receiveSizeSum().getAndSet(0);
+			counter.semaphore().drainPermits();
+			counter.semaphore().release(tps);
+			long tmpSuccess = success;
+			long sps = tmpSuccess - currentSuccess;
+			currentSuccess = tmpSuccess;
+			Log.i(String.format("SEND:%-10d, SUCCESS:%-10d, FAIL:%-10d, SPS:%-6d, TIME AVG.(MS):%-6d, SIZE AVG.(B):%-8d, SIZE SUM(B):%-10d",
+				send,
+				success,
+				fail,
+				sps,
+				sps == 0 || timeSum == 0 ? 0 : timeSum / sps,
+				sps == 0 || sizeSum == 0 ? 0 : (sizeSum / sps),
+				sizeSum
+			));
+			if (threadCount * loopTimes * list.size() == success + fail) {
+				break;
+			}
+			Thread.sleep(1000);
+		}
+		loopGroupSet.gracefullyShutdown();
 	}
 }

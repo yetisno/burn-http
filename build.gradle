@@ -4,8 +4,8 @@ version '1.1'
 apply plugin: 'java'
 apply plugin: 'idea'
 
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
+sourceCompatibility = 1.7
+targetCompatibility = 1.7
 
 repositories {
     mavenCentral()
@@ -16,10 +16,10 @@ repositories {
 
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
-    compile 'org.apache.commons:commons-lang3:3.3.2'
-    compile 'commons-codec:commons-codec:1.10'
-    compile 'com.ning:async-http-client:1.9.3'
-    compile 'log4j:log4j:1.2.17'
+//    compile 'org.apache.commons:commons-lang3:3.3.2'
+//    compile 'commons-codec:commons-codec:1.10'
+//    compile 'com.ning:async-http-client:1.9.3'
+//    compile 'log4j:log4j:1.2.17'
     compile 'com.google.code.gson:gson:2.3.1'
     // for Logging - start
     compile 'org.slf4j:slf4j-api:1.7.12'
@@ -60,6 +60,7 @@ task exportLib(type: Copy) {
 task addLogConfigure(type: Copy) {
     into "$buildDir${File.separator}output${File.separator}"
     from "$projectDir${File.separator}log.yaml"
+    from "$projectDir${File.separator}url.json"
 }
 
 jar {
