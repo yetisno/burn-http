@@ -46,13 +46,6 @@ public class Counter {
 		return receiveSizeSum;
 	}
 
-	public Semaphore semaphore() {
-		return semaphore;
-	}
-
-	public void semaphore(Semaphore semaphore) {
-		this.semaphore = semaphore;
-	}
 
 	public AtomicLong send() {
 		return send;

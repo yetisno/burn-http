@@ -7,7 +7,6 @@ import io.netty.handler.codec.http.*;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Created by yeti on 15/9/6.
@@ -37,21 +36,31 @@ public class AsyncSender implements Sender {
 			}
 			channel.writeAndFlush(request);
 		} catch (Exception e) {
-			counter.fail().getAndIncrement();
+//			counter.fail().getAndIncrement();
+			counter.send().decrementAndGet();
 			return;
 		}
 	}
 
-	public void start(ArrayList<Req> reqList, int loopTimes) {
-		for (int currentTimes = 0; currentTimes < loopTimes; currentTimes++) {
+	public void start(ArrayList<Req> reqList, int tps) {
+		while (true) {
+			long startTime = System.currentTimeMillis();
+			int currentTimes = 0;
 			for (Req req : reqList) {
-				try {
-					while (!counter.semaphore().tryAcquire(1, TimeUnit.SECONDS)) {
-					}
-				} catch (InterruptedException e) {
-				}
 				counter.send().getAndIncrement();
 				send(req);
+				currentTimes++;
+				if (currentTimes >= tps) {
+					startTime = System.currentTimeMillis() - startTime;
+					if (startTime < 1000) {
+						try {
+							Thread.sleep(1000 - startTime);
+						} catch (InterruptedException e) {
+						}
+					}
+					startTime = System.currentTimeMillis();
+					currentTimes = 0;
+				}
 			}
 		}
 	}

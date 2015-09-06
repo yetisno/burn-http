@@ -16,7 +16,7 @@ public class AsyncResultHandler extends ChannelDuplexHandler {
 	@Override
 	public void channelInactive(ChannelHandlerContext ctx) throws Exception {
 		if (!done) {
-			counter.fail().getAndIncrement();
+//			counter.fail().getAndIncrement();
 		}
 	}
 
@@ -27,6 +27,7 @@ public class AsyncResultHandler extends ChannelDuplexHandler {
 		if (status != 200) {
 			counter.fail.getAndIncrement();
 			release(response);
+			ctx.channel().close();
 			return;
 		}
 		int dataLength = response.content().capacity();
@@ -48,7 +49,8 @@ public class AsyncResultHandler extends ChannelDuplexHandler {
 
 	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-		counter.fail.getAndIncrement();
+		counter.send().decrementAndGet();
+//		counter.fail.getAndIncrement();
 	}
 
 	@Override
